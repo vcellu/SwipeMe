@@ -4952,6 +4952,11 @@ react-native-redash@^14.1.1:
     normalize-svg-path "^1.0.1"
     parse-svg-path "^0.1.2"
 
+react-native-safe-area-context@^3.0.4:
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/react-native-safe-area-context/-/react-native-safe-area-context-3.0.4.tgz#c37c5948cbe0ea0a2c08159f90e84d19fcceab19"
+  integrity sha512-Va/yoAJPMHdX4h5SfCbjRBjLpo09cJZvou2SU81Oh0wwAw3MmDAa7C/mpCllpEwWdeUxpQk9UjF2uSpjLRHi6w==
+
 react-native-webview@^10.3.1:
   version "10.3.1"
   resolved "https://registry.yarnpkg.com/react-native-webview/-/react-native-webview-10.3.1.tgz#04a2b17a37daf04575b3abd10b1fb29d2c154c6f"
