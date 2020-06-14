@@ -5,6 +5,7 @@ import {
   useWindowDimensions,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import Animated, {
   useCode,
@@ -15,7 +16,6 @@ import Animated, {
   set,
   Value,
   SpringUtils,
-  call,
   clockRunning,
   startClock,
   spring,
@@ -34,14 +34,30 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const SwipeableList = ({data, renderItems, initialScale, borderRadius}) => {
   const windowWidth = useWindowDimensions().width;
+  const windowHeight = useWindowDimensions().height;
   const [fullScreen, setFullScreen] = useState(false);
   const insets = useSafeAreaInsets();
   const translateX = useValue(0);
   const offsetX = useValue(0);
-  const scale = useValue(initialScale);
+  const progress = useValue(0);
+  const scale = Animated.interpolate(progress, {
+    inputRange: [0, 1],
+    outputRange: [initialScale, 1],
+  });
+
+  const headerTranslateY = Animated.interpolate(progress, {
+    inputRange: [0, 1],
+    outputRange: [0, -100],
+  });
+
+  const translateY = Animated.interpolate(progress, {
+    inputRange: [0, 1],
+    outputRange: [0, -40],
+  });
   const clock = useClock();
 
   const {gestureHandler, state, velocity, translation} = usePanGestureHandler();
+  const top = Platform.OS === 'ios' ? 80 - insets.bottom : 40;
   const snapPoints = data.map((_, index) => index * -windowWidth);
   const to = snapPoint(translateX, velocity.x, snapPoints);
 
@@ -58,9 +74,9 @@ const SwipeableList = ({data, renderItems, initialScale, borderRadius}) => {
   }, []);
 
   useCode(() => {
-    const state = {
+    const cstate = {
       finished: new Value(0),
-      position: scale,
+      position: progress,
       velocity: new Value(0),
       time: new Value(0),
     };
@@ -69,23 +85,23 @@ const SwipeableList = ({data, renderItems, initialScale, borderRadius}) => {
       ...SpringUtils.makeDefaultConfig(),
       bounciness: 4,
       speed: 4,
-      toValue: new Value(fullScreen ? 1 : initialScale),
+      toValue: new Value(fullScreen ? 1 : 0),
     });
+
     const reset = [
-      set(state.finished, 0),
-      set(state.velocity, 0),
-      set(state.time, 0),
+      set(cstate.finished, 0),
+      set(cstate.velocity, 0),
+      set(cstate.time, 0),
+
       startClock(clock),
     ];
-    const end =[
-      stopClock(clock),
-    ];
+    const end = [stopClock(clock)];
 
     return block([
       cond(not(clockRunning(clock)), reset),
-      spring(clock, state, config),
-      set(scale, state.position),
-      cond(state.finished, end),
+      spring(clock, cstate, config),
+      set(progress, cstate.position),
+      cond(cstate.finished, end),
     ]);
   }, [fullScreen]);
 
@@ -94,7 +110,7 @@ const SwipeableList = ({data, renderItems, initialScale, borderRadius}) => {
   };
 
   return (
-    <PanGestureHandler {...gestureHandler}>
+    <PanGestureHandler {...gestureHandler} enabled={!fullScreen}>
       <Animated.View
         style={[
           styles.container,
@@ -111,19 +127,37 @@ const SwipeableList = ({data, renderItems, initialScale, borderRadius}) => {
               {transform: [{translateX: translateX}]},
             ]}>
             <Animated.View
-              style={[styles.item, {borderRadius}, {transform: [{scale}]}]}>
+              style={[
+                styles.item,
+                {
+                  height: windowHeight - insets.top - insets.bottom,
+                },
+                {top},
+                {width: windowWidth},
+                {borderRadius},
+                {transform: [{scale}, {translateY}]},
+              ]}>
               <TouchableOpacity
+                disabled={fullScreen}
                 activeOpacity={1}
                 style={styles.full}
                 onPress={onTapGesture}>
-                <View style={styles.full} pointerEvents="none">
+                <View
+                  style={styles.full}
+                  pointerEvents={fullScreen ? 'auto' : 'none'}>
                   {renderItems(item, index)}
                 </View>
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
         ))}
-        <Animated.View style={[styles.header, {width: windowWidth}]} />
+        <Animated.View
+          style={[
+            styles.header,
+            {width: windowWidth},
+            {transform: [{translateY: headerTranslateY}]},
+          ]}
+        />
       </Animated.View>
     </PanGestureHandler>
   );
@@ -157,14 +191,11 @@ const styles = StyleSheet.create({
   },
   sheet: {
     ...StyleSheet.absoluteFillObject,
-    width: Dimensions.get('window').width,
     alignItems: 'center',
     justifyContent: 'center',
-    top: 80,
   },
   item: {
     ...StyleSheet.absoluteFillObject,
-    flex: 1,
   },
 });
 

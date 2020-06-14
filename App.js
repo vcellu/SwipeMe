@@ -26,7 +26,7 @@ const App = () => {
         <SwipeableList
           data={data}
           borderRadius={8}
-          initialScale={0.9}
+          initialScale={0.8}
           renderItems={(item, index) => (
             <View style={styles.item}>
               <WebView
